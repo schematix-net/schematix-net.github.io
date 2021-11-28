@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkschematix_documentation=self.webpackChunkschematix_documentation||[]).push([[713],{2964:function(s){s.exports=JSON.parse('{"allTagsPath":"/blog/tags","slug":"/blog/tags/json-schema","name":"json schema","count":1,"permalink":"/blog/tags/json-schema"}')}}]);

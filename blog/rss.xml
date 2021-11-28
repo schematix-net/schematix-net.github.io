@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+    <channel>
+        <title>Schematix Blog</title>
+        <link>https://www.schematix.net/blog</link>
+        <description>Schematix Blog</description>
+        <lastBuildDate>Wed, 17 Nov 2021 00:00:00 GMT</lastBuildDate>
+        <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
+        <generator>https://github.com/jpmonette/feed</generator>
+        <item>
+            <title><![CDATA[Validating CSV files using JSON Schemas]]></title>
+            <link>https://www.schematix.net/blog/2021/11/17/validating-csv-files-with-json-schemas</link>
+            <guid>Validating CSV files using JSON Schemas</guid>
+            <pubDate>Wed, 17 Nov 2021 00:00:00 GMT</pubDate>
+            <description><![CDATA[CSV files are an often used medium for transferring data between systems. Be it medical data, financial data, or]]></description>
+            <content:encoded><![CDATA[<p>CSV files are an often used medium for transferring data between systems. Be it medical data, financial data, or
+any other type of data, CSV files are often the exit or entry point of any IT system. But whenever the data
+gets ingested, what options do we have to verify the validity of our data? This blogpost dives in how to validate
+CSV data using standard JSON Schemas.</p><p>JSON Schemas, as the name implies, are schemas used to validate JSON structures. However, CSV files (with a bit of
+imagination) can resemble JSON structures quite well, and as such, a combination of CSV files and JSON Schemas seems
+a straightforward one. </p><p>JSON Schemas offer a wide range of validation options. For instance, JSON Schemas offer data types, such as Strings,
+Numbers, and Booleans as standard data types. Besides that, there are a wide range of validation options, ranging
+from length checking, maximum values, to more complex validations of using Regular Expressions or custom datatypes.
+All in all, JSON Schemas offer a very complete set of validations to validate most data.</p><h3>Generate random data</h3><p>To validate data, we start by defining a Schema. An easy way to create a Schema is by using <code>schematix init</code>, which
+we can invoke by using the following command:</p><pre><code>docker run -ti schematix/cli:latest init
+</code></pre><p>This will generate a starting point for our Schema, and highlights some of the options Schematix provides. To make
+things a bit simpler, we limit the schema to only 3 properties, like this:</p><pre><code class="language-json">{
+  &quot;$schema&quot; : &quot;http://json-schema.org/draft-07/schema#&quot;,
+  &quot;$id&quot; : &quot;https://schema.schematix.net/data-gen/simple_types.json&quot;,
+  &quot;type&quot; : &quot;object&quot;,
+  &quot;title&quot; : &quot;Initializer template&quot;,
+  &quot;description&quot; : &quot;Initializer example template&quot;,
+  &quot;properties&quot; : {
+    &quot;author&quot; : {
+      &quot;type&quot; : &quot;string&quot;
+    },
+    &quot;book title&quot; : {
+      &quot;type&quot; : &quot;string&quot;
+    },
+    &quot;isbn10&quot; : {
+      &quot;type&quot; : &quot;string&quot;,
+      &quot;maxLength&quot; : 10
+    }
+  },
+  &quot;required&quot; : [ &quot;author&quot; ]
+}
+</code></pre><p>So, now we have a simple JSON Schema which we can use to validate some input data.
+Save the above file to a file named <code>book.schema.json</code></p><p>We could create some data to validate by hand, but it&#x27;s easier to have Schematix validate a few records for us.
+We can do so using the <code>generate-data</code> command, like this:</p><pre><code>docker run -ti -v ${PWD}:/tmp schematix/cli generate-data /tmp/book.schema.json --output=/tmp/books.csv
+</code></pre><p>This will produce the following result:</p><table><thead><tr><th>author</th><th>book title</th><th>isbn10</th></tr></thead><tbody><tr><td>Shelli Kreiger</td><td>A Catskill Eagle</td><td>0733564410</td></tr><tr><td>Kling Group</td><td>Blue Remembered Earth</td><td>1595015485</td></tr><tr><td>&quot;Funk, Hirthe and Daniel&quot;</td><td>Ring of Bright Water</td><td>0473680718</td></tr><tr><td>&quot;Buckridge, Padberg and Abernathy&quot;</td><td>Little Hands Clapping</td><td>165077253X</td></tr><tr><td>Eugena Stiedemann</td><td>Françoise Sagan</td><td>0985914041</td></tr><tr><td>Tami Carroll MD</td><td>Nine Coaches Waiting</td><td>196552673X</td></tr><tr><td>&quot;Swaniawski, Stiedemann and Boehm&quot;</td><td>Frequent Hearses</td><td>1726121577</td></tr><tr><td>Altenwerth-Champlin</td><td>Tender Is the Night</td><td>1337231479</td></tr><tr><td>Mr. Gaye Russel</td><td>Consider Phlebas</td><td>0033802831</td></tr><tr><td>Dr. Zonia DuBuque</td><td>The Mirror Crack&#x27;d from Side to Side</td><td>1650263562</td></tr></tbody></table><p>As you can see in the data above, the generated data isn&#x27;t some random string. Schematix comes
+with many natural text generators, and attempts to find a suitable match based on the heurisics
+in the schema. This makes working with data far more pleasant than just generating a text like
+<code>pXOOqbkqzk</code>. The posibilities of generating random data go far beyond this basic example, but it
+gives bit of an indication of what&#x27;s possible.</p><h3>Validating CSV data</h3><p>Now, the last part of our setup is to actually start validating the CSV data. If we would validate
+the data as is, there wouldn&#x27;t be any validation errors, since Schematix attempts to generate
+only valid data, unless instructed otherwise. So, let&#x27;s manually change some of the data.</p><p>When looking at the schema, we see that we have a maxmum length for the ISBN 10 identifier. We
+can put an invalid value in the data by exceeding the length of 10, so let&#x27;s do that, and change the
+last number in the CSV file like this:</p><table><thead><tr><th>author</th><th>book title</th><th>isbn10</th></tr></thead><tbody><tr><td>Dr. Zonia DuBuque</td><td>The Mirror Crack&#x27;d from Side to Side</td><td>1650263562<strong>XXX</strong></td></tr></tbody></table><p>Now that we have invalid data in the CSV file, let&#x27;s validate it. You can do so with the following command,
+which is very similar to the command to generate data:</p><pre><code>docker run -ti -v ${PWD}:/tmp schematix/cli validate  /tmp/books.csv /tmp/book.schema.json --header=1
+</code></pre><p>Note that we&#x27;re supplying <code>header=1</code> parameter, to skip the first line of the CSV file, which contains the header.</p><p>The validation result will now look like this:</p><pre><code>Validation FAILED with 1 error:
+- line 20:&lt;isbn10&gt; String length 13 is greater than maxLength 10
+</code></pre><p>And we&#x27;ve validated our first CSV file using a JSON Schema!</p><h2>Conclusion</h2><p>The above gave a small introduction in how to improve the quality of data coming out or going into
+a system by providing the option to easily validate the data. If you need to know more,
+please <a href="/docs/getting_started/overview">check out the documentation</a>, or contact us!</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Welcome]]></title>
+            <link>https://www.schematix.net/blog/2019/05/30/welcome</link>
+            <guid>Welcome</guid>
+            <pubDate>Thu, 30 May 2019 00:00:00 GMT</pubDate>
+            <description><![CDATA[Blog features are powered by the blog plugin. Simply add files to the blog directory. It supports tags as well!]]></description>
+            <content:encoded><![CDATA[<p>Blog features are powered by the blog plugin. Simply add files to the <code>blog</code> directory. It supports tags as well!</p><p>Delete the whole directory if you don&#x27;t want the blog features. As simple as that!</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Hello]]></title>
+            <link>https://www.schematix.net/blog/2019/05/29/hello-world</link>
+            <guid>Hello</guid>
+            <pubDate>Wed, 29 May 2019 00:00:00 GMT</pubDate>
+            <description><![CDATA[Welcome to this blog. This blog is created with Docusaurus 2 alpha.]]></description>
+            <content:encoded><![CDATA[<p>Welcome to this blog. This blog is created with <a href="https://v2.docusaurus.io/"><strong>Docusaurus 2 alpha</strong></a>.</p><p>This is a test post.</p><p>A whole bunch of other information.</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Hola]]></title>
+            <link>https://www.schematix.net/blog/2019/05/28/hola</link>
+            <guid>Hola</guid>
+            <pubDate>Tue, 28 May 2019 00:00:00 GMT</pubDate>
+            <description><![CDATA[Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet]]></description>
+            <content:encoded><![CDATA[<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p>]]></content:encoded>
+        </item>
+    </channel>
+</rss>
